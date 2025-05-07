@@ -2,6 +2,7 @@ package com.hyhomelab.jwork;
 
 import com.google.gson.Gson;
 import com.hyhomelab.jwork.exception.RepoNotFoundException;
+import com.hyhomelab.jwork.exception.TaskExistedException;
 import com.hyhomelab.jwork.repo.TaskRepo;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import com.hyhomelab.jwork.value.TaskStatus;
@@ -11,6 +12,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 
 /**
@@ -20,24 +23,38 @@ import java.util.function.BiConsumer;
  */
 public class TaskManager {
 
-    public static final int DEFAULT_CONCURRENT_NUM = 10;
-
     private final TaskRepo repo;
     private final Map<String, TaskQueue> queueMap = new HashMap<>();
     private final Object lock = new Object();
     private BiConsumer<Task, Throwable> failedHandler = (t, e) -> {};
+    private final Config cfg;
 
-    public TaskManager(TaskRepo repo) {
+    public TaskManager(TaskRepo repo, Option...options) {
         if(repo == null){
             throw new RepoNotFoundException("task repository must not be null");
         }
         this.repo = repo;
+
+        this.cfg = defaultConfig();
+        Optional.ofNullable(options).ifPresent( opts -> {
+            for(var opt : options){
+                opt.accept(this.cfg);
+            }
+        });
+
+    }
+
+    private Config defaultConfig() {
+        var cfg = new Config();
+        cfg.setScanIntervalSec(2);
+        cfg.setConcurrentNum(10);
+        return cfg;
     }
 
     public void regHandler(TaskHandler handler){
         synchronized (lock){
             var q = queueMap.computeIfAbsent(handler.queue(), k -> {
-                var newQueue = new TaskQueue(k, repo, DEFAULT_CONCURRENT_NUM);
+                var newQueue = new TaskQueue(k, repo, this.cfg.getConcurrentNum(), this.cfg.getScanIntervalSec());
                 newQueue.OnFailed(this.failedHandler);
                 return newQueue;
             });
@@ -72,12 +89,12 @@ public class TaskManager {
      * @param data
      * @return taskId
      */
-    public String addUnTriggerTask(String queue, String group,String taskId, Serializable data){
+    public String addUnTriggerTask(String queue, String group,String taskId, Serializable data) throws TaskExistedException {
         var unReachableTimeTrigger = new RunAtTrigger(LocalDateTime.of(9999, 12, 30, 23, 59, 59).toInstant(ZoneOffset.UTC));
         return this.addTask(queue, group, data, unReachableTimeTrigger, TaskOption.withInitStatus(TaskStatus.NOT_TRIGGERED), TaskOption.withTaskId(taskId));
     }
 
-    public String addTask(String queue, String group, Serializable data, Trigger trigger, TaskOption... options){
+    public String addTask(String queue, String group, Serializable data, Trigger trigger, TaskOption... options) throws TaskExistedException {
         // 设置个性化配置
         var taskCfg = new TaskConfig();
         for(var opt : options){

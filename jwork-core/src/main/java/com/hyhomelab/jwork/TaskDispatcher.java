@@ -5,6 +5,7 @@ import com.hyhomelab.jwork.value.TaskStatus;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -120,6 +121,12 @@ public class TaskDispatcher extends Thread{
                     taskHandler.execute(ctx);
                     repo.saveSuccessResult(ctx.getTask().getTaskId(), TaskStatus.SUCCESS, "success");
                     log.debug("[{}] execute task={} success!",this.getName(), ctx.getTask().getTaskId());
+
+                    // process cron task
+                    var nextTimeSec = ctx.getTask().getTrigger().nextTimeSec();
+                    if( nextTimeSec > Instant.now().getEpochSecond()){
+                        repo.resetTo(ctx.getTask().getTaskId(), TaskStatus.PENDING, nextTimeSec, 0);
+                    }
 
                 } catch(Exception e){
                     repo.saveFailedResult(ctx.getTask().getTaskId(), TaskStatus.FAILED, task.getRetryTimes(), e.getMessage());

@@ -2,6 +2,7 @@ package com.hyhomelab.jwork.repo;
 
 import com.hyhomelab.jwork.Task;
 import com.hyhomelab.jwork.Trigger;
+import com.hyhomelab.jwork.exception.TaskExistedException;
 import com.hyhomelab.jwork.value.TaskStatus;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  * @date 2025/4/29 17:16
  */
 public interface TaskRepo {
-    void create(Task task);
+    void create(Task task) throws TaskExistedException;
 
     boolean swapToRunning(String taskId, TaskStatus currentStatus, TaskStatus runningStatus, int maxRetryTimes);
 
@@ -27,4 +28,6 @@ public interface TaskRepo {
     Task getByTaskId(String taskId);
 
     void triggerToPending(String taskId, TaskStatus taskStatus, long nextTime, Trigger trigger);
+
+    void resetTo(String taskId, TaskStatus taskStatus, long nextTimeSec, int resetRetryTimes);
 }

@@ -21,7 +21,7 @@ public class MemoryTaskRepoImpl implements TaskRepo{
     private final Object lock = new Object();
 
     @Override
-    public void create(Task task) {
+    public void create(Task task) throws TaskExistedException {
         synchronized (lock){
             if(storage.stream().anyMatch(e -> e.getTaskId().equals(task.getTaskId()))){
                 throw new TaskExistedException("task existed! taskId = %s".formatted(task.getTaskId()));
@@ -94,6 +94,18 @@ public class MemoryTaskRepoImpl implements TaskRepo{
                 value.setStatus(taskStatus);
                 value.setNextTimeSec(nextTime);
                 value.setTrigger(trigger);
+            });
+        }
+    }
+
+    @Override
+    public void resetTo(String taskId, TaskStatus taskStatus, long nextTimeSec, int resetRetryTimes) {
+        synchronized (lock){
+            var task = storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst();
+            task.ifPresent(value -> {
+                value.setStatus(taskStatus);
+                value.setNextTimeSec(nextTimeSec);
+                value.setRetryTimes(resetRetryTimes);
             });
         }
     }

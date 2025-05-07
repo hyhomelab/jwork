@@ -5,7 +5,7 @@ package com.hyhomelab.jwork.exception;
  * @email hyhomelab@hotmail.com
  * @date 2025/4/29 23:03
  */
-public class TaskExistedException extends RuntimeException{
+public class TaskExistedException extends Exception{
 
     public TaskExistedException() {
     }

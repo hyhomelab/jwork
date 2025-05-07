@@ -3,6 +3,7 @@ package com.hyhomelab.jwork.mysql;
 import com.google.gson.Gson;
 import com.hyhomelab.jwork.Task;
 import com.hyhomelab.jwork.Trigger;
+import com.hyhomelab.jwork.exception.TaskExistedException;
 import com.hyhomelab.jwork.repo.TaskRepo;
 import com.hyhomelab.jwork.value.TaskStatus;
 import lombok.Data;
@@ -10,10 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +30,12 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     private final String tableName;
 
     @Data
-    public static final class TriggerData{
+    public static final class TriggerData {
         private String cls;
         private String data;
     }
 
-    public MysqlTaskRepoImpl(String tableName, DataSource dataSource){
+    public MysqlTaskRepoImpl(String tableName, DataSource dataSource) {
         this.tableName = tableName;
         this.dataSource = dataSource;
     }
@@ -47,39 +45,37 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         this.dataSource = dataSource;
     }
 
-    private int doUpdate(String sql, List<Object> params){
+    private int doUpdate(String sql, List<Object> params) throws SQLException {
         log.debug("sql: {}", sql);
         log.debug("params: {}", params);
-        try(
+        try (
                 var conn = dataSource.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)
-        ){
-            for(var i=0;i< params.size();i++){
-                ps.setObject(i+1, params.get(i));
+        ) {
+            for (var i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
             }
             int rows = ps.executeUpdate();
             log.debug("result: {}", rows);
             return rows;
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
-    private <T> T queryOne(String sql, List<Object> params, ResultSetMapper<T> mapper){
+    private <T> T queryOne(String sql, List<Object> params, ResultSetMapper<T> mapper) {
         log.debug("sql: {}", sql);
         log.debug("params: {}", params);
 
-        try(
+        try (
                 var conn = dataSource.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)
-        ){
-            for(var i=0;i< params.size();i++){
-                ps.setObject(i+1, params.get(i));
+        ) {
+            for (var i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
             }
 
-            try(var rs = ps.executeQuery()){
-                if(rs.next()){
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
                     log.debug("result: {}", 1);
                     return mapper.map(rs);
                 }
@@ -93,21 +89,21 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         return null;
     }
 
-    private <T> List<T> queryList(String sql, List<Object> params, ResultSetMapper<T> mapper){
+    private <T> List<T> queryList(String sql, List<Object> params, ResultSetMapper<T> mapper) {
         log.debug("sql: {}", sql);
         log.debug("params: {}", params);
 
         var result = new ArrayList<T>();
-        try(
+        try (
                 var conn = dataSource.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)
-        ){
-            for(var i=0;i< params.size();i++){
-                ps.setObject(i+1, params.get(i));
+        ) {
+            for (var i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
             }
 
-            try(var rs = ps.executeQuery()){
-                while(rs.next()){
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
                     result.add(mapper.map(rs));
                 }
                 log.debug("result: {}", result.size());
@@ -122,9 +118,8 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     }
 
 
-
     @Override
-    public void create(Task task) {
+    public void create(Task task) throws TaskExistedException {
         String sql = "INSERT INTO %s (task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)".formatted(tableName);
 
         List<Object> params = new ArrayList<>();
@@ -144,11 +139,19 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(now); // create_time
         params.add(now); // update_time
 
-        doUpdate(sql, params);
+        try {
+            doUpdate(sql, params);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            if (e.getMessage().contains("Duplicate")) {
+                throw new TaskExistedException("taskId=%s".formatted(task.getTaskId()));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String toTriggerData(Trigger trigger) {
-        if(trigger == null){
+        if (trigger == null) {
             return new Gson().toJson(new TriggerData());
         }
         var triggerJson = new Gson().toJson(trigger);
@@ -161,9 +164,9 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     @Override
     public boolean swapToRunning(String taskId, TaskStatus currentStatus, TaskStatus runningStatus, int maxRetryTimes) {
         String sql = """
-        update %s set `status`=?, update_time=?
-        where task_id=? and `status`=? and retry_times < ?
-        """.formatted(tableName);
+                update %s set `status`=?, update_time=?
+                where task_id=? and `status`=? and retry_times < ?
+                """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(runningStatus.getValue());                             // status
@@ -172,15 +175,19 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(currentStatus.getValue());                             // AND status
         params.add(maxRetryTimes);                                        // AND retry_times <=
 
-        return doUpdate(sql, params) > 0;
+        try {
+            return doUpdate(sql, params) > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void saveSuccessResult(String taskId, TaskStatus taskStatus, String msg) {
         String sql = """
-        update %s set `status`=?,`result`=?, update_time=?
-        where task_id=?
-        """.formatted(tableName);
+                update %s set `status`=?,`result`=?, update_time=?
+                where task_id=?
+                """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(taskStatus.getValue());                                // status
@@ -188,22 +195,30 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(new Timestamp(Instant.now().toEpochMilli()));         // update_time
         params.add(taskId);                                               // WHERE task_id
 
-        doUpdate(sql, params);
+        try {
+            doUpdate(sql, params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void changeStatusTo(String taskId, TaskStatus taskStatus) {
         String sql = """
-        update %s set `status`=?, update_time=?
-        where task_id=?
-        """.formatted(tableName);
+                update %s set `status`=?, update_time=?
+                where task_id=?
+                """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(taskStatus.getValue());                                // SET status = ?
         params.add(new Timestamp(Instant.now().toEpochMilli()));         // SET update_time = ?
         params.add(taskId);                                               // WHERE task_id = ?
 
-        doUpdate(sql, params);
+        try {
+            doUpdate(sql, params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -225,9 +240,9 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     @Override
     public void saveFailedResult(String taskId, TaskStatus taskStatus, Integer retryTimes, String message) {
         String sql = """
-        update %s set `status`=?,`result`=?, update_time=?, retry_times=?
-        where task_id=?
-        """.formatted(tableName);
+                update %s set `status`=?,`result`=?, update_time=?, retry_times=?
+                where task_id=?
+                """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(taskStatus.getValue());                                // status
@@ -236,7 +251,11 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(retryTimes + 1);                                       // retry_times
         params.add(taskId);                                               // WHERE task_id
 
-        doUpdate(sql, params);
+        try {
+            doUpdate(sql, params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -268,9 +287,9 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     }
 
     private Trigger fromTriggerData(String trigger) throws ClassNotFoundException {
-        if(trigger != null){
+        if (trigger != null) {
             var triggerData = new Gson().fromJson(trigger, TriggerData.class);
-            if(triggerData.getCls() != null && !triggerData.getCls().isBlank()){
+            if (triggerData.getCls() != null && !triggerData.getCls().isBlank()) {
                 Class<?> cls = Class.forName(triggerData.getCls());
                 return (Trigger) new Gson().fromJson(triggerData.getData(), cls);
             }
@@ -281,9 +300,9 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     @Override
     public void triggerToPending(String taskId, TaskStatus taskStatus, long nextTimeSec, Trigger trigger) {
         String sql = """
-        update %s set `status`=?, next_time_sec=?, trigger=?, update_time=?
-        where task_id=?
-        """.formatted(tableName);
+                update %s set `status`=?, next_time_sec=?, trigger=?, update_time=?
+                where task_id=?
+                """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(taskStatus.getValue());                                // status
@@ -292,6 +311,31 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(new Timestamp(Instant.now().toEpochMilli()));         // update_time
         params.add(taskId);                                               // WHERE task_id
 
-        doUpdate(sql, params);
+        try {
+            doUpdate(sql, params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void resetTo(String taskId, TaskStatus taskStatus, long nextTimeSec, int resetRetryTimes) {
+        String sql = """
+                update %s set `status`=?, next_time_sec=?, retry_times=?, update_time=?
+                where task_id=?
+                """.formatted(tableName);
+        List<Object> params = new ArrayList<>();
+        params.add(taskStatus.getValue());                              // status
+        params.add(nextTimeSec);                                        // next_time_sec
+        params.add(resetRetryTimes);                                    // retry_times
+        params.add(new Timestamp(Instant.now().toEpochMilli()));        // update_time
+        params.add(taskId);                                             // where task_id
+
+        try {
+            doUpdate(sql, params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

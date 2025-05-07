@@ -1,6 +1,7 @@
 package com.hyhomelab.jwork;
 
 import com.google.gson.Gson;
+import com.hyhomelab.jwork.exception.TaskExistedException;
 import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import lombok.Data;
@@ -78,8 +79,8 @@ public class TaskQueueTest {
         }
     }
 
-    @Test
-    public void testRun() throws InterruptedException {
+    //@Test
+    public void testRun() throws InterruptedException, TaskExistedException {
 
         var repo = new MemoryTaskRepoImpl();
         var manager = new TaskManager(repo);

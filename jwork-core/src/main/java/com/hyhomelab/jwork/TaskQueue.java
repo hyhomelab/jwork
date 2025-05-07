@@ -35,7 +35,7 @@ public class TaskQueue {
     private final TaskDispatcher dispatcher;
     private final ScheduledExecutorService scannerScheduler;
 
-    public TaskQueue(String name, TaskRepo repo, int concurrentNum) {
+    public TaskQueue(String name, TaskRepo repo, int concurrentNum, int scanIntervalSec) {
         this.name = name + "-queue";
         this.repo = repo;
         this.cfg = defaultConfig();
@@ -53,7 +53,7 @@ public class TaskQueue {
         scannerScheduler = Executors.newScheduledThreadPool(1);
         log.info("[{}] scanner start!", name);
         // 等查询任务结束后再延迟
-        scannerScheduler.scheduleWithFixedDelay(scanner, 0, 2, TimeUnit.SECONDS);
+        scannerScheduler.scheduleWithFixedDelay(scanner, 0, scanIntervalSec, TimeUnit.SECONDS);
 
     }
 

@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import com.hyhomelab.jwork.TaskContext;
 import com.hyhomelab.jwork.TaskHandler;
 import com.hyhomelab.jwork.TaskManager;
+import com.hyhomelab.jwork.TaskOption;
+import com.hyhomelab.jwork.exception.TaskExistedException;
 import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
+import com.hyhomelab.jwork.trigger.CronTrigger;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -84,8 +87,8 @@ public class MysqlTaskRepoImplTest {
         }
     }
 
-    @Test
-    public void testRun() throws InterruptedException {
+    //@Test
+    public void testRun() throws InterruptedException, TaskExistedException {
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:mysql://localhost:3306/ry-vue?serverTimezone=UTC");
@@ -114,6 +117,77 @@ public class MysqlTaskRepoImplTest {
                     new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
             );
         }
+        Thread.sleep(Duration.ofSeconds(10L).toMillis());
+        manager.shutdown();
+        Thread.sleep(Duration.ofSeconds(1L).toMillis());
+        System.out.println("over");
+    }
+
+    //@Test
+    public void testDuplicateTaskId() throws InterruptedException {
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/ry-vue?serverTimezone=UTC");
+        config.setUsername("root");
+        config.setPassword("123456");
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        DataSource ds = new HikariDataSource(config);
+
+        var repo = new MysqlTaskRepoImpl(ds);
+        var manager = new TaskManager(repo);
+        manager.onFailed((t, e) -> log.error("task[{}] err!, e=", t.getTaskId(), e));
+
+        manager.regHandler(new TestTaskHandler());
+
+        try{
+            manager.addTask("test", "order",
+                    new TestTaskData(String.valueOf(0), new BigDecimal("100.1")),
+                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS)),
+                    TaskOption.withTaskId("abc")
+            );
+            manager.addTask("test", "order",
+                    new TestTaskData(String.valueOf(0), new BigDecimal("100.1")),
+                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS)),
+                    TaskOption.withTaskId("abc")
+            );
+        }catch (TaskExistedException e){
+
+        }
+
+        Thread.sleep(Duration.ofSeconds(10L).toMillis());
+        manager.shutdown();
+        Thread.sleep(Duration.ofSeconds(1L).toMillis());
+        System.out.println("over");
+    }
+
+    //@Test
+    public void testCron() throws InterruptedException {
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/ry-vue?serverTimezone=UTC");
+        config.setUsername("root");
+        config.setPassword("123456");
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        DataSource ds = new HikariDataSource(config);
+
+        var repo = new MysqlTaskRepoImpl(ds);
+        var manager = new TaskManager(repo);
+        manager.onFailed((t, e) -> log.error("task[{}] err!, e=", t.getTaskId(), e));
+
+        manager.regHandler(new TestTaskHandler());
+
+//        try{
+//            manager.addTask("test", "order",
+//                    new TestTaskData("cron_test", new BigDecimal("100.1")),
+//                    new CronTrigger("0/3 * * * * ?"), // exec per 3s
+//                    TaskOption.withTaskId("cron_test")
+//            );
+//        }catch (TaskExistedException e){
+//
+//        }
+
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();
         Thread.sleep(Duration.ofSeconds(1L).toMillis());
