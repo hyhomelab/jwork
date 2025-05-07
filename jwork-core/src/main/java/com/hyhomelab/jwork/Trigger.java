@@ -8,6 +8,7 @@ import java.io.Serializable;
  * @date 2025/4/29 15:44
  */
 public interface Trigger extends Serializable {
-    long nextTime();
+
+    long nextTimeSec();
 
 }

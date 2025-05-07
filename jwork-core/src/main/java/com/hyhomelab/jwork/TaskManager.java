@@ -53,7 +53,7 @@ public class TaskManager {
     public void triggerTask(String taskId, Trigger trigger){
         var task = this.repo.getByTaskId(taskId);
         if(task != null && task.getStatus() == TaskStatus.NOT_TRIGGERED){
-            this.repo.triggerToPending(taskId, TaskStatus.PENDING, trigger.nextTime(), trigger);
+            this.repo.triggerToPending(taskId, TaskStatus.PENDING, trigger.nextTimeSec(), trigger);
         }
     }
 
@@ -94,7 +94,7 @@ public class TaskManager {
         var jsonData = new Gson().toJson(data);
         task.setData(jsonData);
         task.setRetryTimes(0);
-        task.setNextTime(trigger.nextTime());
+        task.setNextTimeSec(trigger.nextTimeSec());
         task.setTrigger(trigger);
 
         // 持久化

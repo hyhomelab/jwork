@@ -49,7 +49,7 @@ public class MemoryTaskRepoImpl implements TaskRepo{
             var task = storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst();
             if(task.isPresent()){
                 var trigger = task.get().getTrigger();
-                if(trigger != null && trigger.nextTime() < Instant.now().getEpochSecond()){
+                if(trigger != null && trigger.nextTimeSec() < Instant.now().getEpochSecond()){
                     // 内存模式直接移除掉
                     task.ifPresent(storage::remove);
                 }
@@ -67,14 +67,17 @@ public class MemoryTaskRepoImpl implements TaskRepo{
 
     @Override
     public List<Task> queryQueueTasksBefore(String queueName, TaskStatus taskStatus, long beforeSeconds, Integer scanLimitNum) {
-        return storage.stream().filter(e -> e.getQueue().equals(queueName) && e.getStatus() == taskStatus && e.getNextTime() < beforeSeconds).limit(scanLimitNum).toList();
+        return storage.stream().filter(e -> e.getQueue().equals(queueName) && e.getStatus() == taskStatus && e.getNextTimeSec() < beforeSeconds).limit(scanLimitNum).toList();
     }
 
     @Override
     public void saveFailedResult(String taskId, TaskStatus taskStatus, Integer retryTimes, String message) {
         synchronized (lock){
             var task = storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst();
-            task.ifPresent(value -> value.setRetryTimes(retryTimes + 1));
+            task.ifPresent(value -> {
+                value.setRetryTimes(retryTimes + 1);
+                value.setResult(message);
+            });
         }
     }
 
@@ -89,7 +92,7 @@ public class MemoryTaskRepoImpl implements TaskRepo{
             var task = storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst();
             task.ifPresent(value -> {
                 value.setStatus(taskStatus);
-                value.setNextTime(nextTime);
+                value.setNextTimeSec(nextTime);
                 value.setTrigger(trigger);
             });
         }

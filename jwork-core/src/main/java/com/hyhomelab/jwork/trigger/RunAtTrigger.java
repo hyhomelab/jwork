@@ -1,6 +1,7 @@
 package com.hyhomelab.jwork.trigger;
 
 import com.hyhomelab.jwork.Trigger;
+import lombok.Data;
 
 import java.time.Instant;
 import java.util.Date;
@@ -10,9 +11,10 @@ import java.util.Date;
  * @email hyhomelab@hotmail.com
  * @date 2025/4/29 15:46
  */
+@Data
 public class RunAtTrigger implements Trigger {
 
-    private final long runAtSeconds;
+    private long runAtSeconds;
 
     public RunAtTrigger(Date time) {
         this.runAtSeconds = time.toInstant().getEpochSecond();
@@ -23,7 +25,7 @@ public class RunAtTrigger implements Trigger {
     }
 
     @Override
-    public long nextTime() {
+    public long nextTimeSec() {
         return this.runAtSeconds;
     }
 }

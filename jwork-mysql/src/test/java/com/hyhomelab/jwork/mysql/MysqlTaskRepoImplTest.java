@@ -1,12 +1,18 @@
-package com.hyhomelab.jwork;
+package com.hyhomelab.jwork.mysql;
 
 import com.google.gson.Gson;
+import com.hyhomelab.jwork.TaskContext;
+import com.hyhomelab.jwork.TaskHandler;
+import com.hyhomelab.jwork.TaskManager;
 import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
+import javax.sql.DataSource;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -16,10 +22,10 @@ import java.time.temporal.ChronoUnit;
 /**
  * @author hyhomelab
  * @email hyhomelab@hotmail.com
- * @date 2025/5/6 13:53
+ * @date 2025/5/7 14:18
  */
 @Slf4j
-public class TaskQueueTest {
+public class MysqlTaskRepoImplTest {
 
     @Data
     public static class TestTaskData implements Serializable {
@@ -51,7 +57,7 @@ public class TaskQueueTest {
         @Override
         public void execute(TaskContext ctx) {
             var data = new Gson().fromJson(ctx.getTask().getData(), TestTaskData.class);
-            if(ctx.getTask().getId() == 0){
+            if(data.getOrderSn().equals("0")){
                 throw new RuntimeException("我出错啦");
             }
             log.info("orderSn={}", data.getOrderSn());
@@ -81,7 +87,15 @@ public class TaskQueueTest {
     @Test
     public void testRun() throws InterruptedException {
 
-        var repo = new MemoryTaskRepoImpl();
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/ry-vue?serverTimezone=UTC");
+        config.setUsername("root");
+        config.setPassword("123456");
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        DataSource ds = new HikariDataSource(config);
+
+        var repo = new MysqlTaskRepoImpl(ds);
         var manager = new TaskManager(repo);
         manager.onFailed((t, e) -> log.error("task[{}] err!, e=", t.getTaskId(), e));
 

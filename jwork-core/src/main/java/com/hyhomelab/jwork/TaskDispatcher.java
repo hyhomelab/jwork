@@ -123,8 +123,8 @@ public class TaskDispatcher extends Thread{
 
                 } catch(Exception e){
                     repo.saveFailedResult(ctx.getTask().getTaskId(), TaskStatus.FAILED, task.getRetryTimes(), e.getMessage());
-                    log.error("[{}] execute task={} failed!, cause {}",this.getName(), ctx.getTask().getTaskId(), e.getMessage());
-                    if(ctx.getTask().getRetryTimes() + 1 <= maxRetryTimes){
+                    log.error("[{}] execute task={} error!, cause {}",this.getName(), ctx.getTask().getTaskId(), e.getMessage());
+                    if(ctx.getTask().getRetryTimes() + 1 < maxRetryTimes){
                         repo.changeStatusTo(ctx.getTask().getTaskId(), TaskStatus.PENDING);
                     }else{
                         onFailedHandler.accept(ctx.getTask(), e);

@@ -33,7 +33,7 @@ public class CronTrigger implements Trigger {
     }
 
     @Override
-    public long nextTime() {
+    public long nextTimeSec() {
         Cron cron = parse(this.cron);
         ExecutionTime execTime = ExecutionTime.forCron(cron);
         return execTime.nextExecution(ZonedDateTime.now()).get().toEpochSecond();

@@ -29,9 +29,10 @@ public class Task {
     private String queue;
     private String group;
     private TaskStatus status;
-    private long nextTime;
+    private long nextTimeSec;
     private String data;
     private Trigger trigger;
+    private String result;
     private Integer retryTimes;
 
 
