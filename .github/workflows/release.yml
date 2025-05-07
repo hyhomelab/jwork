@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '22'
+          java-version: '17'
           server-id: ossrh
           server-username: OSSRH_USERNAME
           server-password: OSSRH_TOKEN
@@ -32,7 +32,7 @@ jobs:
         run: |
           mvn versions:set -DnewVersion=${VERSION} -DprocessAllModules
           mvn versions:commit
-          mvn clean deploy -P release
+          mvn clean deploy
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
@@ -43,7 +43,7 @@ jobs:
         run: |
           mvn versions:set -DnewVersion=${VERSION} -DprocessAllModules
           mvn versions:commit
-          mvn clean deploy -P release
+          mvn clean deploy
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
