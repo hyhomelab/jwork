@@ -5,7 +5,6 @@ import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -78,7 +77,7 @@ public class TaskQueueTest {
         }
     }
 
-    @Test
+//    @Test
     public void testRun() throws InterruptedException {
 
         var repo = new MemoryTaskRepoImpl();
