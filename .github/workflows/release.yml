@@ -30,7 +30,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: Set version in pom.xml
-        run: mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false -DprocessAllModules=true
+        run: mvn versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false -DprocessAllModules=true
 
       - name: Import GPG key
         run: |
