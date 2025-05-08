@@ -32,12 +32,26 @@ jobs:
         run: mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false -DprocessAllModules=true
 
       - name: Import GPG key
-        run: echo "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+        run: |
+          echo "$GPG_PRIVATE_KEY" > private.key
+          gpg --batch --import private.key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Create Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings>" > ~/.m2/settings.xml
+          echo "  <servers>" >> ~/.m2/settings.xml
+          echo "    <server>" >> ~/.m2/settings.xml
+          echo "      <id>ossrh</id>" >> ~/.m2/settings.xml
+          echo "      <username>${{ secrets.OSSRH_USERNAME }}</username>" >> ~/.m2/settings.xml
+          echo "      <password>${{ secrets.OSSRH_TOKEN }}</password>" >> ~/.m2/settings.xml
+          echo "    </server>" >> ~/.m2/settings.xml
+          echo "  </servers>" >> ~/.m2/settings.xml
+          echo "</settings>" >> ~/.m2/settings.xml
 
       - name: Deploy to OSSRH
         run: mvn clean deploy -P release -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
         env:
-          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
