@@ -74,9 +74,12 @@
         <profile>
             <id>release</id>
             <distributionManagement>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
                 <repository>
                     <id>ossrh</id>
-                    <name>Central Repository OSSRH</name>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
@@ -144,7 +147,7 @@
                             <version>0.6.0</version>
                             <extensions>true</extensions>
                             <configuration>
-                                <publishingServerId>central</publishingServerId>
+                                <publishingServerId>ossrh</publishingServerId>
                                 <checksums>required</checksums>
                                 <autoPublish>true</autoPublish>
                             </configuration>
