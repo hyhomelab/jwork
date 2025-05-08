@@ -18,6 +18,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: maven
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           server-id: ossrh
@@ -38,20 +39,9 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Create Maven settings.xml
-        run: |
-          mkdir -p ~/.m2
-          echo "<settings>" > ~/.m2/settings.xml
-          echo "  <servers>" >> ~/.m2/settings.xml
-          echo "    <server>" >> ~/.m2/settings.xml
-          echo "      <id>ossrh</id>" >> ~/.m2/settings.xml
-          echo "      <username>${{ secrets.OSSRH_USERNAME }}</username>" >> ~/.m2/settings.xml
-          echo "      <password>${{ secrets.OSSRH_TOKEN }}</password>" >> ~/.m2/settings.xml
-          echo "    </server>" >> ~/.m2/settings.xml
-          echo "  </servers>" >> ~/.m2/settings.xml
-          echo "</settings>" >> ~/.m2/settings.xml
-
       - name: Deploy to OSSRH
-        run: mvn clean deploy -P release -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
+        run: mvn --batch-mode deploy -P release -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}

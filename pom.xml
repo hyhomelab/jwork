@@ -6,23 +6,44 @@
     <artifactId>jwork</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
+    <url>https://github.com/hyhomelab/jwork</url>
+    <description>A simple Java async job</description>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git://github.com/hyhomelab/jwork.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:hyhomelab/jwork.git</developerConnection>
+        <url>https://github.com/hyhomelab/jwork</url>
+    </scm>
+
+    <properties>
+        <!-- 设置 JDK 版本 -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
+        <encoding>UTF-8</encoding>
+        <docencoding>UTF-8</docencoding>
+        <charSet>UTF-8</charSet>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <developers>
+        <developer>
+            <id>hyhomelab</id>
+            <name>hyhomelab</name>
+            <email>hyhomelab@hotmail.com</email>
+        </developer>
+    </developers>
 
     <modules>
         <module>jwork-core</module>
         <module>jwork-mysql</module>
     </modules>
-
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <build>
         <pluginManagement>
@@ -52,6 +73,13 @@
     <profiles>
         <profile>
             <id>release</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <name>Central Repository OSSRH</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
             <build>
                 <pluginManagement>
                     <plugins>
@@ -116,7 +144,7 @@
                             <version>0.6.0</version>
                             <extensions>true</extensions>
                             <configuration>
-                                <publishingServerId>ossrh</publishingServerId>
+                                <publishingServerId>central</publishingServerId>
                                 <checksums>required</checksums>
                                 <autoPublish>true</autoPublish>
                             </configuration>

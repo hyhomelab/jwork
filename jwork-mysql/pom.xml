@@ -11,41 +11,6 @@
 
     <artifactId>jwork-mysql</artifactId>
     <name>jwork-mysql</name>
-    <url>https://github.com/hyhomelab/jwork</url>
-    <description>A simple Java async job repo by mysql</description>
-
-
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>http://www.opensource.org/licenses/mit-license.php</url>
-        </license>
-    </licenses>
-
-    <scm>
-        <connection>scm:git:git://github.com/hyhomelab/jwork.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:hyhomelab/jwork.git</developerConnection>
-        <url>https://github.com/hyhomelab/jwork</url>
-    </scm>
-
-    <properties>
-        <!-- 设置 JDK 版本 -->
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.release>17</maven.compiler.release>
-        <encoding>UTF-8</encoding>
-        <docencoding>UTF-8</docencoding>
-        <charSet>UTF-8</charSet>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-    <developers>
-        <developer>
-            <id>hyhomelab</id>
-            <name>hyhomelab</name>
-            <email>hyhomelab@hotmail.com</email>
-        </developer>
-    </developers>
 
     <dependencies>
         <dependency>
