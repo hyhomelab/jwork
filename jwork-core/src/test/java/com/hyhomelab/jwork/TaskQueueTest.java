@@ -6,7 +6,6 @@ import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -79,7 +78,7 @@ public class TaskQueueTest {
         }
     }
 
-    //@Test
+//    @Test
     public void testRun() throws InterruptedException, TaskExistedException {
 
         var repo = new MemoryTaskRepoImpl();
@@ -100,6 +99,7 @@ public class TaskQueueTest {
                     new TestTaskData(String.valueOf(i), new BigDecimal(100+i)),
                     new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
             );
+            Thread.sleep(1000);
         }
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();

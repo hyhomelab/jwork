@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -21,7 +20,7 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class TaskDispatcher extends Thread{
 
-    private final Queue<Task> taskQueue;
+    private final BlockingQueue<Task> taskQueue;
     private final RunningController runningController;
     private final ThreadPoolExecutor executor;
     private final Map<String, TaskHandler> groupHandlerMap;
@@ -43,7 +42,7 @@ public class TaskDispatcher extends Thread{
         }
     }
 
-    public TaskDispatcher(String name, Queue<Task> queue, RunningController controller,
+    public TaskDispatcher(String name, BlockingQueue<Task> queue, RunningController controller,
                           Map<String, TaskHandler> groupHandlerMap,
                           TaskRepo repo, int maxRetryTimes,
                           int idleNum, int concurrentNum, long idleSecs){
@@ -81,21 +80,25 @@ public class TaskDispatcher extends Thread{
         log.info("[{}] start!", this.getName());
         while(runningController.isRunning() && !isInterrupted()){
 
-            Task task = taskQueue.poll();
-            if(task != null){
-                log.debug("[{}] get task! taskId={}", this.getName(), task.getTaskId());
-                if(task.getId() == -1){
-                    log.info("[{}] get poison task!!!", this.getName());
-                    break;
-                }
-                var handler = groupHandlerMap.get(task.getGroup());
-                if(handler == null){
-                    log.warn("[{}] handler(group={}) not found, skip task：{}",this.getName(), task.getGroup(), task.getTaskId());
-                    continue;
-                }
-
-                runTask(task, handler);
+            Task task = null;
+            try {
+                task = taskQueue.take();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
+            log.debug("[{}] get task! taskId={}", this.getName(), task.getTaskId());
+            if(task.getId() == -1){
+                log.info("[{}] get poison task!!!", this.getName());
+                break;
+            }
+            var handler = groupHandlerMap.get(task.getGroup());
+            if(handler == null){
+                log.warn("[{}] handler(group={}) not found, skip task：{}",this.getName(), task.getGroup(), task.getTaskId());
+                continue;
+            }
+
+            runTask(task, handler);
         }
         executor.shutdown();
         log.info("[{}] shutdown", this.getName());

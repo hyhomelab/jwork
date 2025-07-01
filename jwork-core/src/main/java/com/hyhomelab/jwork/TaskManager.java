@@ -8,12 +8,12 @@ import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import com.hyhomelab.jwork.value.TaskStatus;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 
 /**
@@ -92,6 +92,17 @@ public class TaskManager {
     public String addUnTriggerTask(String queue, String group,String taskId, Serializable data) throws TaskExistedException {
         var unReachableTimeTrigger = new RunAtTrigger(LocalDateTime.of(9999, 12, 30, 23, 59, 59).toInstant(ZoneOffset.UTC));
         return this.addTask(queue, group, data, unReachableTimeTrigger, TaskOption.withInitStatus(TaskStatus.NOT_TRIGGERED), TaskOption.withTaskId(taskId));
+    }
+
+    /**
+     * retry failed task
+     * @param taskId
+     */
+    public void retry(String taskId){
+        var task = repo.getByTaskId(taskId);
+        if(task.getStatus() == TaskStatus.FAILED){
+            repo.resetTo(taskId, TaskStatus.PENDING, Instant.now().getEpochSecond(), 0);
+        }
     }
 
     public String addTask(String queue, String group, Serializable data, Trigger trigger, TaskOption... options) throws TaskExistedException {

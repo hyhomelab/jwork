@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
@@ -28,7 +27,7 @@ public class TaskQueue {
     private final String name;
     private final List<String> tags = new ArrayList<>();
     private final Map<String, TaskHandler> groupHandlerMap = new ConcurrentHashMap<>();
-    private final Queue<Task> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
     private final TaskRepo repo;
     private final Object lock = new Object();
     private final RunningController ctrl = new RunningController();
