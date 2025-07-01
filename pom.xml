@@ -6,6 +6,7 @@
     <artifactId>jwork</artifactId>
     <version>1.0.3</version>
     <packaging>pom</packaging>
+    <name>jwork</name>
     <url>https://github.com/hyhomelab/jwork</url>
     <description>A simple Java async job</description>
 
