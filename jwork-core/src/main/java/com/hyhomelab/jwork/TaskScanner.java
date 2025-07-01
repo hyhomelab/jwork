@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * @author hyhomelab
@@ -18,11 +18,11 @@ public class TaskScanner implements Runnable{
 
     private final TaskRepo repo;
     private final String name;
-    private final Queue<Task> queue;
+    private final BlockingQueue<Task> queue;
     private final String queueName;
     private final Integer scanNum;
 
-    public TaskScanner(String queueName, TaskRepo repo, Queue<Task> queue, Integer scanNum) {
+    public TaskScanner(String queueName, TaskRepo repo, BlockingQueue<Task> queue, Integer scanNum) {
         this.queueName = queueName;
         this.name = queueName + "-scanner";
         this.repo = repo;
@@ -37,7 +37,13 @@ public class TaskScanner implements Runnable{
         List<Task> tasks = repo.queryQueueTasksBefore(this.queueName, TaskStatus.PENDING, Instant.now().getEpochSecond(), scanNum);
         if(tasks != null && !tasks.isEmpty()){
             log.debug("[{}] found records: {}", this.name, tasks.size());
-            queue.addAll(tasks);
+            for(var task : tasks){
+                try {
+                    queue.put(task);
+                } catch (InterruptedException e) {
+                    log.error("[%s] put task to queue err:%s".formatted(this.name, e.getMessage()));
+                }
+            }
         }
     }
 }
