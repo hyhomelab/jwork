@@ -82,10 +82,14 @@ public class TaskDispatcher extends Thread{
 
             Task task = null;
             try {
-                task = taskQueue.take();
+                task = taskQueue.poll(30, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
+            }
+            if(task == null){
+                log.debug("[{}] auto wakeup, continue", this.getName());
+                continue;
             }
             log.debug("[{}] get task! taskId={}", this.getName(), task.getTaskId());
             if(task.getId() == -1){

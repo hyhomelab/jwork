@@ -88,18 +88,18 @@ public class TaskQueueTest {
         manager.regHandler(new TestTaskHandler());
         manager.regHandler(new PringOrderAmountTaskHandler());
 
-        for(var i=0;i<10;i++){
-            manager.addTask("test", "order",
-                    new TestTaskData(String.valueOf(i), new BigDecimal("100.1")),
-                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
-            );
-        }
+//        for(var i=0;i<10;i++){
+//            manager.addTask("test", "order",
+//                    new TestTaskData(String.valueOf(i), new BigDecimal("100.1")),
+//                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
+//            );
+//        }
         for(var i=0;i<10;i++){
             manager.addTask("order", "default",
                     new TestTaskData(String.valueOf(i), new BigDecimal(100+i)),
                     new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
             );
-            Thread.sleep(1000);
+            Thread.sleep(2000);
         }
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();
