@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.hyhomelab</groupId>
     <artifactId>jwork</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.7</version>
     <packaging>pom</packaging>
     <name>jwork</name>
     <url>https://github.com/hyhomelab/jwork</url>

@@ -126,7 +126,11 @@ public class TaskDispatcher extends Thread{
             if(repo.swapToRunning(ctx.getTask().getTaskId(), ctx.getTask().getStatus(), TaskStatus.RUNNING, maxRetryTimes)){
                 try{
                     taskHandler.execute(ctx);
-                    repo.saveSuccessResult(ctx.getTask().getTaskId(), TaskStatus.SUCCESS, "success");
+                    var result = ctx.getResult();
+                    if(result == null || result.trim().isEmpty()){
+                        result = "success";
+                    }
+                    repo.saveSuccessResult(ctx.getTask().getTaskId(), TaskStatus.SUCCESS, result);
                     log.debug("[{}] execute task={} success!",this.getName(), ctx.getTask().getTaskId());
 
                     // process cron task

@@ -10,4 +10,5 @@ import lombok.Data;
 @Data
 public class TaskContext {
     private Task task;
+    private String result;
 }
