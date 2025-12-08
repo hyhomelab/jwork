@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -26,8 +27,8 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     static final String DefaultTableName = "jwork";
     private static final Logger log = LoggerFactory.getLogger(MysqlTaskRepoImpl.class);
 
-    private final DataSource dataSource;
-    private final String tableName;
+    protected final DataSource dataSource;
+    protected final String tableName;
 
     @Data
     public static final class TriggerData {
@@ -89,7 +90,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         return null;
     }
 
-    private <T> List<T> queryList(String sql, List<Object> params, ResultSetMapper<T> mapper) {
+    protected <T> List<T> queryList(String sql, List<Object> params, ResultSetMapper<T> mapper) {
         log.debug("sql: {}", sql);
         log.debug("params: {}", params);
 
@@ -120,7 +121,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
 
     @Override
     public void create(Task task) throws TaskExistedException {
-        String sql = "INSERT INTO %s (task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)".formatted(tableName);
+        String sql = "INSERT INTO %s (task_id, queue, `group`, status, next_time_sec, data, meta, `trigger`, retry_times, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)".formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(task.getTaskId());
@@ -129,6 +130,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         params.add(task.getStatus().getValue());
         params.add(task.getNextTimeSec());
         params.add(task.getData());
+        params.add(new Gson().toJson(task.getMeta()));
 
         // trigger
         String triggerData = toTriggerData(task.getTrigger());
@@ -268,7 +270,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         return queryOne(sql, params, this::dbToTask);
     }
 
-    private Task dbToTask(ResultSet rs) throws SQLException, ClassNotFoundException {
+    protected Task dbToTask(ResultSet rs) throws SQLException, ClassNotFoundException {
         Task t = new Task();
         t.setId(rs.getLong("id"));
         t.setTaskId(rs.getString("task_id"));
@@ -277,12 +279,18 @@ public class MysqlTaskRepoImpl implements TaskRepo {
         t.setStatus(TaskStatus.fromValue(rs.getString("status")));
         t.setNextTimeSec(rs.getLong("next_time_sec"));
         t.setData(rs.getString("data"));
+        var meta = rs.getString("meta");
+        if(meta != null){
+            var metaData = new Gson().fromJson(meta, HashMap.class);
+            t.setMeta(metaData);
+        }
 
         Trigger trigger = fromTriggerData(rs.getString("trigger"));
         t.setTrigger(trigger);
 
         t.setRetryTimes(rs.getInt("retry_times"));
         t.setResult(rs.getString("result"));
+
         return t;
     }
 

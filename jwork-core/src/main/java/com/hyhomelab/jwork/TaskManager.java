@@ -124,6 +124,7 @@ public class TaskManager {
         task.setRetryTimes(0);
         task.setNextTimeSec(trigger.nextTimeSec());
         task.setTrigger(trigger);
+        task.setMeta(taskCfg.getMeta());
 
         // 持久化
         repo.create(task);

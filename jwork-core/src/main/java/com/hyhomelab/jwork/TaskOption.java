@@ -2,6 +2,7 @@ package com.hyhomelab.jwork;
 
 import com.hyhomelab.jwork.value.TaskStatus;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -18,6 +19,10 @@ public interface TaskOption extends Consumer<TaskConfig> {
 
     public static TaskOption withInitStatus(TaskStatus status){
         return cfg -> cfg.setInitStatus(status);
+    }
+
+    public static TaskOption withMeta(Map<String,Object> meta){
+        return cfg -> cfg.setMeta(meta);
     }
 
 };

@@ -6,14 +6,11 @@ import com.hyhomelab.jwork.TaskHandler;
 import com.hyhomelab.jwork.TaskManager;
 import com.hyhomelab.jwork.TaskOption;
 import com.hyhomelab.jwork.exception.TaskExistedException;
-import com.hyhomelab.jwork.repo.MemoryTaskRepoImpl;
-import com.hyhomelab.jwork.trigger.CronTrigger;
 import com.hyhomelab.jwork.trigger.RunAtTrigger;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 
 import javax.sql.DataSource;
 import java.io.Serializable;
@@ -21,6 +18,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author hyhomelab
@@ -63,6 +62,7 @@ public class MysqlTaskRepoImplTest {
             if(data.getOrderSn().equals("0")){
                 throw new RuntimeException("我出错啦");
             }
+            ctx.setResult("hahahaha");
             log.info("orderSn={}", data.getOrderSn());
         }
     }
@@ -87,7 +87,7 @@ public class MysqlTaskRepoImplTest {
         }
     }
 
-    //@Test
+//    @Test
     public void testRun() throws InterruptedException, TaskExistedException {
 
         HikariConfig config = new HikariConfig();
@@ -111,12 +111,12 @@ public class MysqlTaskRepoImplTest {
                     new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
             );
         }
-        for(var i=0;i<10;i++){
-            manager.addTask("order", "default",
-                    new TestTaskData(String.valueOf(i), new BigDecimal(100+i)),
-                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
-            );
-        }
+//        for(var i=0;i<10;i++){
+//            manager.addTask("order", "default",
+//                    new TestTaskData(String.valueOf(i), new BigDecimal(100+i)),
+//                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
+//            );
+//        }
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();
         Thread.sleep(Duration.ofSeconds(1L).toMillis());
@@ -194,4 +194,35 @@ public class MysqlTaskRepoImplTest {
         System.out.println("over");
     }
 
+
+//    @Test
+    public void testQueryByMeta() throws InterruptedException, TaskExistedException {
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/ry-vue?serverTimezone=UTC");
+        config.setUsername("root");
+        config.setPassword("123456");
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        DataSource ds = new HikariDataSource(config);
+
+        var repo = new MysqlTaskRepoImpl(ds);
+        var manager = new TaskManager(repo);
+
+        for(var i=0;i<10;i++){
+            var orderId = String.valueOf(i);
+            manager.addTask("test", "order",
+                    new TestTaskData(String.valueOf(i), new BigDecimal("100.1")),
+                    new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS)),
+                    TaskOption.withMeta(new HashMap<String,Object>(){{
+                        put("orderId", orderId);
+                    }})
+            );
+        }
+        Thread.sleep(Duration.ofSeconds(1L).toMillis());
+        var result = repo.queryList("select * from %s where meta->>'$.orderId'=?".formatted(repo.tableName), List.of("1"), repo::dbToTask);
+        assert result != null && result.size() == 1;
+        System.out.println("over");
+    }
 }
+

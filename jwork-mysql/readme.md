@@ -13,6 +13,7 @@ CREATE TABLE `jwork` (
      `create_time` timestamp NOT NULL,
      `update_time` timestamp NOT NULL,
      `result` text,
+     `meta` json DEFAULT NULL COMMENT '用于条件过滤的 meta 信息 json',
      PRIMARY KEY (`id`),
      UNIQUE KEY `jwork_unique` (`task_id`),
      KEY `jwork_queue_IDX` (`queue`, `status`) USING BTREE

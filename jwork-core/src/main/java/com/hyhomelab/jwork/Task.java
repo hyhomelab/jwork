@@ -4,6 +4,8 @@ import com.hyhomelab.jwork.value.TaskStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.Map;
+
 /**
  * @author hyhomelab
  * @email hyhomelab@hotmail.com
@@ -34,6 +36,7 @@ public class Task {
     private Trigger trigger;
     private String result;
     private Integer retryTimes;
+    private Map<String, Object> meta;
 
 
 }
