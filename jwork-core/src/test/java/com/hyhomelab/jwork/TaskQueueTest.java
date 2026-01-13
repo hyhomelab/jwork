@@ -82,6 +82,7 @@ public class TaskQueueTest {
     public void testRun() throws InterruptedException, TaskExistedException {
 
         var repo = new MemoryTaskRepoImpl();
+//        var manager = new TaskManager(repo, Option.withPrefix("test"));
         var manager = new TaskManager(repo);
         manager.onFailed((t, e) -> log.error("task[{}] err!, e=", t.getTaskId(), e));
 
@@ -99,7 +100,7 @@ public class TaskQueueTest {
                     new TestTaskData(String.valueOf(i), new BigDecimal(100+i)),
                     new RunAtTrigger(Instant.now().plus(1L, ChronoUnit.SECONDS))
             );
-            Thread.sleep(2000);
+            Thread.sleep(500);
         }
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();

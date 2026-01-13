@@ -226,7 +226,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     @Override
     public List<Task> queryQueueTasksBefore(String queueName, TaskStatus taskStatus, long beforeSeconds, Integer scanLimitNum) {
         String sql = """
-                SELECT id, task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time, result FROM %s
+                SELECT id, task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time, result, meta FROM %s
                 where `queue`=? and `status`=? and next_time_sec <= ? limit ?
                 """.formatted(tableName);
 

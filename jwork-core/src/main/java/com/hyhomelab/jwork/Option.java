@@ -1,7 +1,6 @@
 package com.hyhomelab.jwork;
 
-import com.hyhomelab.jwork.value.TaskStatus;
-
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -20,5 +19,8 @@ public interface Option extends Consumer<Config> {
         return cfg -> cfg.setScanIntervalSec(sec);
     }
 
+    static Option withOnlyAllowQueues(String...queue) { return cfg -> cfg.setOnlyAllowQueues(List.of(queue));}
+
+    static  Option withPrefix(String prefix) {return cfg -> cfg.setPrefix(prefix);}
 };
 

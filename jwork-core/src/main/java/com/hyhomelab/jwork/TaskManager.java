@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -48,13 +49,27 @@ public class TaskManager {
         var cfg = new Config();
         cfg.setScanIntervalSec(2);
         cfg.setConcurrentNum(10);
+        cfg.setOnlyAllowQueues(List.of());
         return cfg;
+    }
+
+    private String getQueueName(String name){
+        var queueName = name;
+        if(this.cfg.getPrefix() != null && !this.cfg.getPrefix().trim().isEmpty()){
+            queueName = this.cfg.getPrefix() + "-" + name;
+        }
+        return queueName;
     }
 
     public void regHandler(TaskHandler handler){
         synchronized (lock){
             var q = queueMap.computeIfAbsent(handler.queue(), k -> {
-                var newQueue = new TaskQueue(k, repo, this.cfg.getConcurrentNum(), this.cfg.getScanIntervalSec());
+                var queueName = this.getQueueName(k);
+                boolean allowStart = true;
+                if(!this.cfg.getOnlyAllowQueues().isEmpty()){
+                    allowStart = this.cfg.getOnlyAllowQueues().contains(k);
+                }
+                var newQueue = new TaskQueue(queueName, repo, this.cfg.getConcurrentNum(), this.cfg.getScanIntervalSec(), allowStart);
                 newQueue.OnFailed(this.failedHandler);
                 return newQueue;
             });
@@ -114,7 +129,8 @@ public class TaskManager {
 
         var task = new Task();
         task.setTaskId(taskCfg.getTaskId());
-        task.setQueue(queue);
+        var queueName = this.getQueueName(queue);
+        task.setQueue(queueName);
         task.setGroup(group);
         task.setStatus(taskCfg.getInitStatus());
 

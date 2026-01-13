@@ -21,6 +21,7 @@ public class TaskQueue {
     public static class Config{
         public int concurrentNum;
         public int maxRetryTimes;
+        public boolean allowStart;
     }
 
     private final Config cfg;
@@ -34,10 +35,11 @@ public class TaskQueue {
     private final TaskDispatcher dispatcher;
     private final ScheduledExecutorService scannerScheduler;
 
-    public TaskQueue(String name, TaskRepo repo, int concurrentNum, int scanIntervalSec) {
+    public TaskQueue(String name, TaskRepo repo, int concurrentNum, int scanIntervalSec, boolean allowStart) {
         this.name = name + "-queue";
         this.repo = repo;
         this.cfg = defaultConfig();
+        this.cfg.allowStart = allowStart;
         if(concurrentNum > 0){
             this.cfg.concurrentNum = concurrentNum;
         }
@@ -47,12 +49,18 @@ public class TaskQueue {
                 this.groupHandlerMap, this.repo, this.cfg.maxRetryTimes,
                 1, this.cfg.concurrentNum, 60L);
         dispatcher.start();
-        // 任务扫描器
-        TaskScanner scanner = new TaskScanner(name, this.repo, this.queue, this.cfg.concurrentNum * 2);
-        scannerScheduler = Executors.newScheduledThreadPool(1);
-        log.info("[{}] scanner start!", name);
-        // 等查询任务结束后再延迟
-        scannerScheduler.scheduleWithFixedDelay(scanner, 0, scanIntervalSec, TimeUnit.SECONDS);
+
+        if(this.cfg.allowStart){
+            // 任务扫描器
+            TaskScanner scanner = new TaskScanner(name, this.repo, this.queue, this.cfg.concurrentNum * 2);
+            scannerScheduler = Executors.newScheduledThreadPool(1);
+            log.info("[{}] scanner start!", name);
+            // 等查询任务结束后再延迟
+            scannerScheduler.scheduleWithFixedDelay(scanner, 0, scanIntervalSec, TimeUnit.SECONDS);
+        }else{
+            scannerScheduler = null;
+            log.info("[{}] disable!", name);
+        }
 
     }
 
@@ -62,9 +70,11 @@ public class TaskQueue {
 
     public void shutdown(){
         synchronized (lock){
-            this.queue.add(Task.PoisonTask);
-            ctrl.stop();
-            this.scannerScheduler.shutdown();
+            if(this.cfg.allowStart){
+                this.queue.add(Task.PoisonTask);
+                ctrl.stop();
+                this.scannerScheduler.shutdown();
+            }
         }
     }
 
@@ -72,6 +82,7 @@ public class TaskQueue {
         var cfg = new Config();
         cfg.concurrentNum = 10;
         cfg.maxRetryTimes = 3;
+        cfg.allowStart = true;
         return cfg;
     }
 

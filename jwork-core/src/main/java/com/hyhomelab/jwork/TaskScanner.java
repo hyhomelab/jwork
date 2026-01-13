@@ -34,16 +34,21 @@ public class TaskScanner implements Runnable{
     @Override
     public void run() {
         log.info("[{}] run!", this.name);
-        List<Task> tasks = repo.queryQueueTasksBefore(this.queueName, TaskStatus.PENDING, Instant.now().getEpochSecond(), scanNum);
-        if(tasks != null && !tasks.isEmpty()){
-            log.debug("[{}] found records: {}", this.name, tasks.size());
-            for(var task : tasks){
-                try {
-                    queue.put(task);
-                } catch (InterruptedException e) {
-                    log.error("[%s] put task to queue err:%s".formatted(this.name, e.getMessage()));
+        try{
+
+            List<Task> tasks = repo.queryQueueTasksBefore(this.queueName, TaskStatus.PENDING, Instant.now().getEpochSecond(), scanNum);
+            if(tasks != null && !tasks.isEmpty()){
+                log.debug("[{}] found records: {}", this.name, tasks.size());
+                for(var task : tasks){
+                    try {
+                        queue.put(task);
+                    } catch (InterruptedException e) {
+                        log.error("[%s] put task to queue err:%s".formatted(this.name, e.getMessage()));
+                    }
                 }
             }
+        } catch (Exception e){
+            log.error("[%s] scan err:%s".formatted(this.name, e.getMessage()));
         }
     }
 }
