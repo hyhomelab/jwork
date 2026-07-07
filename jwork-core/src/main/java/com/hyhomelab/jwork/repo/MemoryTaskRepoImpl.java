@@ -83,19 +83,22 @@ public class MemoryTaskRepoImpl implements TaskRepo{
 
     @Override
     public Task getByTaskId(String taskId) {
-        return storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst().orElseThrow(() -> new RuntimeException("task not found: %s".formatted(taskId)));
+        return storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst().orElse(null);
     }
 
     @Override
-    public void triggerToPending(String taskId, TaskStatus taskStatus, long nextTime, Trigger trigger) {
+    public boolean triggerToPending(String taskId, TaskStatus taskStatus, long nextTime, Trigger trigger) {
         synchronized (lock){
             var task = storage.stream().filter(e -> e.getTaskId().equals(taskId)).findFirst();
-            task.ifPresent(value -> {
+            if(task.isPresent() && task.get().getStatus() == TaskStatus.NOT_TRIGGERED){
+                var value = task.get();
                 value.setStatus(taskStatus);
                 value.setNextTimeSec(nextTime);
                 value.setTrigger(trigger);
-            });
+                return true;
+            }
         }
+        return false;
     }
 
     @Override

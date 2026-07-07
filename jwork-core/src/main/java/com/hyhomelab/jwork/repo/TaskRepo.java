@@ -27,7 +27,7 @@ public interface TaskRepo {
 
     Task getByTaskId(String taskId);
 
-    void triggerToPending(String taskId, TaskStatus taskStatus, long nextTime, Trigger trigger);
+    boolean triggerToPending(String taskId, TaskStatus taskStatus, long nextTime, Trigger trigger);
 
     void resetTo(String taskId, TaskStatus taskStatus, long nextTimeSec, int resetRetryTimes);
 }

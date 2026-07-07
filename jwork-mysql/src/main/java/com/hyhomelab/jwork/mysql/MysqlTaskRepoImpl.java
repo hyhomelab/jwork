@@ -306,21 +306,22 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     }
 
     @Override
-    public void triggerToPending(String taskId, TaskStatus taskStatus, long nextTimeSec, Trigger trigger) {
+    public boolean triggerToPending(String taskId, TaskStatus taskStatus, long nextTimeSec, Trigger trigger) {
         String sql = """
                 update %s set `status`=?, next_time_sec=?, trigger=?, update_time=?
-                where task_id=?
+                where task_id=? and `status`=?
                 """.formatted(tableName);
 
         List<Object> params = new ArrayList<>();
-        params.add(taskStatus.getValue());                                // status
-        params.add(nextTimeSec);                                          // next_time
-        params.add(toTriggerData(trigger));                               // trigger
-        params.add(new Timestamp(Instant.now().toEpochMilli()));         // update_time
-        params.add(taskId);                                               // WHERE task_id
+        params.add(taskStatus.getValue());                                // SET status = ?
+        params.add(nextTimeSec);                                          // SET next_time_sec = ?
+        params.add(toTriggerData(trigger));                               // SET trigger = ?
+        params.add(new Timestamp(Instant.now().toEpochMilli()));         // SET update_time = ?
+        params.add(taskId);                                               // WHERE task_id = ?
+        params.add(TaskStatus.NOT_TRIGGERED.getValue());                  // AND status = 'not_triggered'
 
         try {
-            doUpdate(sql, params);
+            return doUpdate(sql, params) > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

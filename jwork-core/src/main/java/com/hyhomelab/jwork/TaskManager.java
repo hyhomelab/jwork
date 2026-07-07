@@ -63,11 +63,11 @@ public class TaskManager {
 
     public void regHandler(TaskHandler handler){
         synchronized (lock){
-            var q = queueMap.computeIfAbsent(handler.queue(), k -> {
-                var queueName = this.getQueueName(k);
+            var queueName = this.getQueueName(handler.queue());
+            var q = queueMap.computeIfAbsent(queueName, k -> {
                 boolean allowStart = true;
                 if(!this.cfg.getOnlyAllowQueues().isEmpty()){
-                    allowStart = this.cfg.getOnlyAllowQueues().contains(k);
+                    allowStart = this.cfg.getOnlyAllowQueues().contains(handler.queue());
                 }
                 var newQueue = new TaskQueue(queueName, repo, this.cfg.getConcurrentNum(), this.cfg.getScanIntervalSec(), allowStart);
                 newQueue.OnFailed(this.failedHandler);
@@ -78,14 +78,21 @@ public class TaskManager {
     }
 
     /**
-     * trigger task to pending status
+     * trigger task to pending status and enqueue for immediate dispatch
      * @param taskId
      * @param trigger
      */
     public void triggerTask(String taskId, Trigger trigger){
-        var task = this.repo.getByTaskId(taskId);
-        if(task != null && task.getStatus() == TaskStatus.NOT_TRIGGERED){
-            this.repo.triggerToPending(taskId, TaskStatus.PENDING, trigger.nextTimeSec(), trigger);
+        // atomically transition from NOT_TRIGGERED to PENDING in repo
+        if(this.repo.triggerToPending(taskId, TaskStatus.PENDING, trigger.nextTimeSec(), trigger)){
+            // enqueue directly to bypass scanner wait (risk 3 fix)
+            var task = this.repo.getByTaskId(taskId);
+            if(task != null){
+                var queue = this.queueMap.get(task.getQueue());
+                if(queue != null){
+                    queue.enqueueTask(task);
+                }
+            }
         }
     }
 
@@ -115,7 +122,7 @@ public class TaskManager {
      */
     public void retry(String taskId){
         var task = repo.getByTaskId(taskId);
-        if(task.getStatus() == TaskStatus.FAILED){
+        if(task != null && task.getStatus() == TaskStatus.FAILED){
             repo.resetTo(taskId, TaskStatus.PENDING, Instant.now().getEpochSecond(), 0);
         }
     }

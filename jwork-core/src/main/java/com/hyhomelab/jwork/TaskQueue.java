@@ -94,4 +94,17 @@ public class TaskQueue {
         groupHandlerMap.put(taskHandler.group(), taskHandler);
     }
 
+    /**
+     * enqueue a task directly for immediate dispatch, bypassing the scanner wait
+     * @param task the task to enqueue
+     * @return true if the task was accepted, false otherwise
+     */
+    public boolean enqueueTask(Task task){
+        if(this.cfg.allowStart){
+            return this.queue.offer(task);
+        }
+        log.warn("[{}] enqueueTask skipped: queue is disabled", this.name);
+        return false;
+    }
+
 }
