@@ -11,6 +11,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Test;
 
 import javax.sql.DataSource;
 import java.io.Serializable;
@@ -187,6 +188,39 @@ public class MysqlTaskRepoImplTest {
 //        }catch (TaskExistedException e){
 //
 //        }
+
+        Thread.sleep(Duration.ofSeconds(10L).toMillis());
+        manager.shutdown();
+        Thread.sleep(Duration.ofSeconds(1L).toMillis());
+        System.out.println("over");
+    }
+
+    @Test
+    public void testTrigger() throws InterruptedException {
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/test?serverTimezone=UTC");
+        config.setUsername("root");
+        config.setPassword("123456");
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        DataSource ds = new HikariDataSource(config);
+
+        var repo = new MysqlTaskRepoImpl(ds);
+        var manager = new TaskManager(repo);
+        manager.onFailed((t, e) -> log.error("task[{}] err!, e=", t.getTaskId(), e));
+
+        manager.regHandler(new TestTaskHandler());
+
+        try{
+            manager.addUnTriggerTask("test", "order",
+                    "trigger_test",
+                    new TestTaskData("trigger_test", new BigDecimal("100.1"))
+            );
+            manager.triggerTask("trigger_test", new RunAtTrigger(Instant.now()));
+        }catch (TaskExistedException e){
+
+        }
 
         Thread.sleep(Duration.ofSeconds(10L).toMillis());
         manager.shutdown();

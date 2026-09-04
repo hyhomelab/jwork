@@ -262,7 +262,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
 
     @Override
     public Task getByTaskId(String taskId) {
-        String sql = "SELECT id, task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time, result FROM %s WHERE task_id = ?".formatted(tableName);
+        String sql = "SELECT id, task_id, queue, `group`, status, next_time_sec, data, `trigger`, retry_times, create_time, update_time, result, meta FROM %s WHERE task_id = ?".formatted(tableName);
 
         List<Object> params = new ArrayList<>();
         params.add(taskId);
@@ -308,7 +308,7 @@ public class MysqlTaskRepoImpl implements TaskRepo {
     @Override
     public boolean triggerToPending(String taskId, TaskStatus taskStatus, long nextTimeSec, Trigger trigger) {
         String sql = """
-                update %s set `status`=?, next_time_sec=?, trigger=?, update_time=?
+                update %s set `status`=?, next_time_sec=?, `trigger`=?, update_time=?
                 where task_id=? and `status`=?
                 """.formatted(tableName);
 
