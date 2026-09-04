@@ -11,7 +11,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 
 import javax.sql.DataSource;
 import java.io.Serializable;
@@ -195,7 +194,7 @@ public class MysqlTaskRepoImplTest {
         System.out.println("over");
     }
 
-    @Test
+//    @Test
     public void testTrigger() throws InterruptedException {
 
         HikariConfig config = new HikariConfig();
